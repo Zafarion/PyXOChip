@@ -1,7 +1,7 @@
 import os
 import sys
 import pygame
-#import winsound
+import winsound
 #import numpy as np
 from random import seed
 from random import randint
@@ -749,15 +749,7 @@ while not crashed:
         if DT > 0: DT -= 1
         if ST > 0:
             ST -= 1
-            #winsound.Beep(2500, 1)
-            #pixelArray = pygame.PixelArray(screen)
-            #for x in range(screen.get_width()):
-            #    for y in range(screen.get_height()):
-            #        #print(pixelArray[x, y])
-            #        if pixelArray[x, y] != yellow:
-            #            pixelArray[x, y] = white
-            #del pixelArray
-            
+            winsound.Beep(2500, 1)
         cycles = 0
         pygame.display.flip()
 
