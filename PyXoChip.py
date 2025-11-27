@@ -1,7 +1,8 @@
-import pygame
-import sys
 import os
-import winsound
+import sys
+import pygame
+#import winsound
+#import numpy as np
 from random import seed
 from random import randint
 
@@ -236,12 +237,14 @@ crashed = False
 black = (0, 0, 0)
 yellow = (255, 255, 0)
 white = (255, 255, 255)
-pixelColor = (black, yellow)
+pixelColor = (0x0, 0xFFFF00)
 width, height = 64, 32
 screen = pygame.display.set_mode((1024, 512))
 back_buffer = pygame.Surface((width + 30, height + 30))
 front_buffer = pygame.Surface((width, height))
-pygame.display.set_caption("PySuperChip v1.0")
+pixelArray = pygame.PixelArray(back_buffer)
+#pixelArray = pygame.surfarray.pixels2d(back_buffer)
+pygame.display.set_caption("PyXOChip v1.0")
 font = pygame.font.SysFont("Retro.ttf", 20)
 
 screen.blit(font.render('Click the ROM filename to load (max 66 files in the dir):', True, yellow), (0, 0))
@@ -352,16 +355,14 @@ def drawPixel():
     
     ##print(x, y, row, column)
     ##print(x + 15 + column, y + 15 + row)
-    oldPixel = pixelColor.index(back_buffer.get_at(((x + 15 + column), (y + 15 + row))))
+    #oldPixel = pixelColor.index(back_buffer.get_at(((x + 15 + column), (y + 15 + row))))
+    oldPixel = pixelColor.index(pixelArray[x + 15 + column, y + 15 + row])
     newPixel = ram[I + row] >> (7 - column) & 1
     if oldPixel and newPixel and (x + column) <= width and (y + row) <= height:
         #erasedPixels.append([x + column, y + row])
         collision = True
-    back_buffer.set_at(((x + 15 + column), (y + 15 + row)), pixelColor[oldPixel ^ newPixel])
-        
-def natural(number):
-    if number < 0: return 0
-    else: return number
+    #back_buffer.set_at(((x + 15 + column), (y + 15 + row)), pixelColor[oldPixel ^ newPixel])
+    pixelArray[x + 15 + column, y + 15 + row] = pixelColor[oldPixel ^ newPixel]
 
 #Main Loop
 while not crashed:
@@ -394,12 +395,16 @@ while not crashed:
                     width, height = 64, 32
                     back_buffer = pygame.Surface((width + 30, height + 30))
                     front_buffer = pygame.Surface((width, height))
+                    pixelArray = pygame.PixelArray(back_buffer)
+                    #pixelArray = pygame.surfarray.pixels2d(back_buffer)
                     PC += 2
                 case 0xFF:
                     print('Changed to 128 x 64 resolution')
                     width, height = 128, 64
                     back_buffer = pygame.Surface((width + 30, height + 30))
                     front_buffer = pygame.Surface((width, height))
+                    pixelArray = pygame.PixelArray(back_buffer)
+                    #pixelArray = pygame.surfarray.pixels2d(back_buffer)
                     PC += 2
                 case _:
                     match ram[PC + 1] >> 4:
@@ -564,38 +569,40 @@ while not crashed:
             
             #print('DRW V' + str(ram[PC] & 0x0F) + '=' + str(V[ram[PC] & 0x0F]) + ', V' + str(ram[PC + 1] >> 4) + '=' + str(V[ram[PC + 1] >> 4]) + ', ' + str(n))
 
-            if n == 0:
-                _16x16Sprite = True
-                n = 16
-            else: _16x16Sprite = False
-
             V[0xF] = 0
             collision = False
 
-            for row in range(n):
-                for column in range(8):
-                    drawPixel()
-                if _16x16Sprite == True:
+            if n != 0:
+                for row in range(n):
+                    for column in range(8):
+                        drawPixel()
+                    if collision:
+                        V[0xF] += 1
+                        collision = False
+                    if width == 128 and (y + row) > height: V[0xF] += 1
+            else:
+                for row in range(16):
+                    for column in range(8):
+                        drawPixel()
                     x += 8
                     I += 1
                     for column in range(8):
                         drawPixel()
                     x -= 8
-                if collision:
-                    V[0xF] += 1
-                    collision = False
-                if width == 128 and (y + row) > height: V[0xF] += 1
-                
-            if _16x16Sprite == True:
+                    if collision:
+                        V[0xF] += 1
+                        collision = False
+                    if width == 128 and (y + row) > height: V[0xF] += 1
                 I -= 16
     
-            front_buffer.blit(back_buffer, (0, 0), (15, 15, width, height))
+            #front_buffer.blit(back_buffer, (0, 0), (15, 15, width, height))
+            front_buffer = back_buffer.subsurface(15, 15, width, height)
+            
             #if len(erasedPixels) > 0:
             #   for pos in range(len(erasedPixels)):
             #       front_buffer.set_at((erasedPixels[pos][0], erasedPixels[pos][1]), pixelColor[1])
             #   erasedPixels = []
             pygame.transform.scale(front_buffer, screen.get_size(), screen)
-            #pygame.transform.scale(back_buffer, screen.get_size(), screen)
             
             PC += 2
         case 0xE:
@@ -741,8 +748,16 @@ while not crashed:
         clock.tick(60)
         if DT > 0: DT -= 1
         if ST > 0:
-            winsound.Beep(2500, 1)
             ST -= 1
+            #winsound.Beep(2500, 1)
+            #pixelArray = pygame.PixelArray(screen)
+            #for x in range(screen.get_width()):
+            #    for y in range(screen.get_height()):
+            #        #print(pixelArray[x, y])
+            #        if pixelArray[x, y] != yellow:
+            #            pixelArray[x, y] = white
+            #del pixelArray
+            
         cycles = 0
         pygame.display.flip()
 
