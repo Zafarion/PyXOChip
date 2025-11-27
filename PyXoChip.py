@@ -233,6 +233,7 @@ Flag = [0] * 16
 cycles = 0
 #erasedPixels = []
 crashed = False
+collision = False
 
 black = (0, 0, 0)
 yellow = (255, 255, 0)
@@ -570,17 +571,8 @@ while not crashed:
             #print('DRW V' + str(ram[PC] & 0x0F) + '=' + str(V[ram[PC] & 0x0F]) + ', V' + str(ram[PC + 1] >> 4) + '=' + str(V[ram[PC + 1] >> 4]) + ', ' + str(n))
 
             V[0xF] = 0
-            collision = False
 
-            if n != 0:
-                for row in range(n):
-                    for column in range(8):
-                        drawPixel()
-                    if collision:
-                        V[0xF] += 1
-                        collision = False
-                    if width == 128 and (y + row) > height: V[0xF] += 1
-            else:
+            if n == 0:
                 for row in range(16):
                     for column in range(8):
                         drawPixel()
@@ -594,7 +586,15 @@ while not crashed:
                         collision = False
                     if width == 128 and (y + row) > height: V[0xF] += 1
                 I -= 16
-    
+            else:
+                for row in range(n):
+                    for column in range(8):
+                        drawPixel()
+                    if collision:
+                        V[0xF] += 1
+                        collision = False
+                    if width == 128 and (y + row) > height: V[0xF] += 1
+        
             #front_buffer.blit(back_buffer, (0, 0), (15, 15, width, height))
             front_buffer = back_buffer.subsurface(15, 15, width, height)
             
